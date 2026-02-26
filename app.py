@@ -30,18 +30,28 @@ def convert_csv(input_path, output_folder):
         os.path.splitext(os.path.basename(input_path))[0] + "_convertido.csv"
     )
 
-    with open(input_path, newline='', encoding="utf-8") as infile, \
-         open(output_path, "w", newline='', encoding="utf-8") as outfile:
+    # Intentar codificaciones comunes
+    encodings = ["utf-8", "cp1252", "latin-1"]
 
-        reader = csv.reader(infile, delimiter=';')
+    for enc in encodings:
+        try:
+            with open(input_path, newline='', encoding=enc) as infile:
+                reader = csv.reader(infile, delimiter=';')
+                rows = list(reader)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        raise Exception("No se pudo leer el archivo por codificación desconocida")
+
+    # Guardar SIEMPRE compatible con Excel
+    with open(output_path, "w", newline='', encoding="utf-8-sig") as outfile:
         writer = csv.writer(outfile, delimiter=',')
-
-        for row in reader:
+        for row in rows:
             new_row = [convert_date(cell.strip()) for cell in row]
             writer.writerow(new_row)
 
     return output_path
-
 # ---------- UI ----------
 def open_file():
     input_file = filedialog.askopenfilename(
